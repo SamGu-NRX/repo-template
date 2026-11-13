@@ -1,0 +1,64 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fail() { printf 'baseline: %s\n' "$*" >&2; exit 1; }
+# A symlink in a destination path must never turn a copy into an overwrite elsewhere.
+occupied() {
+  path=$1
+  while [ "$path" != "$target" ]; do
+    [ ! -L "$path" ] || return 0
+    if [ "$path" = "$1" ]; then
+      [ ! -e "$path" ] || return 0
+    elif [ -e "$path" ] && [ ! -d "$path" ]; then
+      return 0
+    fi
+    path=$(dirname -- "$path")
+  done
+  return 1
+}
+copy_file() {
+  mkdir -p "$(dirname -- "$2")"
+  cp -p "$1" "$2"
+  printf 'Copied %s\n' "${2#"$target"/}"
+}
+case "${1-}" in
+  init)
+    [ "$#" -eq 2 ] && [ "$2" = bun-ts ] || fail 'Usage: ./baseline init bun-ts'
+    command -v bun >/dev/null 2>&1 || fail 'Bun is missing. Install Bun and add it to PATH.'
+    target=$root
+    preset=$root/presets/bun-ts
+    paths='package.json tsconfig.json bun.lock check.d/bun-ts.sh src/sum.ts tests/sum.test.ts'
+    for file in $paths .baseline/stack; do
+      if occupied "$target/$file"; then
+        fail "Refusing to overwrite $file. Merge the preset manually, then write bun-ts to .baseline/stack."
+      fi
+    done
+    for file in $paths; do copy_file "$preset/$file" "$target/$file"; done
+    mkdir -p "$target/.baseline"
+    printf 'bun-ts\n' > "$target/.baseline/stack"
+    printf 'Initialized bun-ts. Run ./check.\n'
+    ;;
+  adopt)
+    [ "$#" -eq 2 ] || fail 'Usage: ./baseline adopt /path/to/existing-repo'
+    [ -d "$2" ] || fail 'Target directory does not exist. Pass an existing Git repository.'
+    target=$(CDPATH= cd -- "$2" && pwd -P)
+    [ "$(git -C "$target" rev-parse --show-toplevel 2>/dev/null)" = "$target" ] || fail 'Target must be the root of an existing Git repository.'
+    command -v bun >/dev/null 2>&1 || fail 'Bun is missing. Install Bun and add it to PATH.'
+    paths=$(bun -e '
+      const manifest = await Bun.file(process.argv[1]).json();
+      if (!Array.isArray(manifest.files) || !manifest.files.every(p => typeof p === "string" && /^(?!.*\.\.)[a-zA-Z0-9_./-]+$/.test(p) && !p.startsWith("/"))) {
+        throw new Error("Invalid baseline.json. Restore the managed file manifest.");
+      }
+      console.log(manifest.files.join("\n"));
+    ' "$root/baseline.json")
+    for file in $paths; do
+      if occupied "$target/$file"; then
+        printf 'Skipped %s (already exists or has a blocked parent).\n' "$file"
+      else
+        copy_file "$root/$file" "$target/$file"
+      fi
+    done
+    printf 'Adopted baseline. Review skipped files, then run ./baseline init bun-ts in the target if needed.\n'
+    ;;
+  *) fail 'Usage: ./baseline init bun-ts | ./baseline adopt /path/to/existing-repo' ;;
+esac

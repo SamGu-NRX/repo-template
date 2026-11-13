@@ -1,0 +1,9 @@
+id: no-empty-catch
+valid:
+  - 'try { run() } catch (e) { throw e }'
+  - 'try { run() } catch { throw new Error("run failed") }'
+  - 'try { run() } finally { cleanup() }'
+invalid:
+  - 'try { run() } catch (e) {}'
+  - 'try { run() } catch {}'
+  - 'try { run() } catch (error) { /* ignored */ }'

@@ -1,0 +1,41 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      stack:
+        description: Expected .baseline/stack in the caller repository
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.4'
+      - name: Validate requested stack
+        env:
+          EXPECTED_STACK: ${{ inputs.stack }}
+        run: |
+          if [ -n "$EXPECTED_STACK" ]; then
+            actual=$(cat .baseline/stack 2>/dev/null) || {
+              echo 'Missing .baseline/stack. Run ./baseline init bun-ts and commit the result.' >&2
+              exit 1
+            }
+            if [ "$actual" != "$EXPECTED_STACK" ]; then
+              echo 'Stack mismatch. Make the caller stack input match .baseline/stack.' >&2
+              exit 1
+            fi
+          fi
+      - run: ./check

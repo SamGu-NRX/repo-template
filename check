@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+fail() { printf 'check: %s\n' "$*" >&2; exit 1; }
+command -v bun >/dev/null 2>&1 || fail 'Bun is missing. Install Bun and put bun and bunx on PATH.'
+command -v bunx >/dev/null 2>&1 || fail 'bunx is missing. Add the Bun bin directory to PATH.'
+bunx @ast-grep/cli@0.51.0 test --skip-snapshot-tests || fail 'Rule tests failed. Fix lint/rules or lint/rule-tests so valid cases pass and invalid cases match.'
+bunx @ast-grep/cli@0.51.0 scan --error || fail 'Scan failed. Fix each reported mistake using its rule message; check sgconfig.yml if configuration failed.'
+if [ ! -e .baseline/stack ]; then
+  printf 'No stack is set. Rule checks passed; run ./baseline init bun-ts to add stack checks.\n'
+  exit 0
+fi
+stack=$(cat .baseline/stack)
+case "$stack" in
+  ''|*[!a-z0-9-]*) fail 'Invalid .baseline/stack. Set it to a supported stack name, such as bun-ts.' ;;
+esac
+[ -f "check.d/$stack.sh" ] || fail "Missing check.d/$stack.sh. Restore the stack check from presets/$stack."
+sh "check.d/$stack.sh" || fail "Stack $stack failed. Fix the type errors or failing tests shown above."

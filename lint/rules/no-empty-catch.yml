@@ -1,0 +1,12 @@
+id: no-empty-catch
+language: TypeScript
+severity: error
+message: An empty catch hides the failure. Handle the error, or rethrow it with context.
+rule:
+  any:
+    - pattern:
+        context: try {} catch ($ERROR) {}
+        selector: catch_clause
+    - pattern:
+        context: try {} catch {}
+        selector: catch_clause

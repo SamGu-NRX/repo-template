@@ -1,0 +1,30 @@
+{
+  "files": [
+    ".github/labels.json",
+    ".github/pull_request_template.md",
+    ".github/workflows/check.yml",
+    ".github/workflows/labels.yml",
+    ".github/workflows/pr-size.yml",
+    ".gitignore",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "README.md",
+    "baseline",
+    "baseline.json",
+    "check",
+    "lint/rule-tests/no-as-any.yml",
+    "lint/rule-tests/no-empty-catch.yml",
+    "lint/rules/no-as-any.yml",
+    "lint/rules/no-empty-catch.yml",
+    "presets/bun-ts/bun.lock",
+    "presets/bun-ts/check.d/bun-ts.sh",
+    "presets/bun-ts/package.json",
+    "presets/bun-ts/src/sum.ts",
+    "presets/bun-ts/tests/sum.test.ts",
+    "presets/bun-ts/tsconfig.json",
+    "rulesets/default-branch.json",
+    "sgconfig.yml",
+    "templates/caller-check.yml"
+  ]
+}

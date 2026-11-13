@@ -1,0 +1,8 @@
+id: no-as-any
+valid:
+  - 'const value: unknown = input;'
+  - 'const value = input as string;'
+  - 'const value = { ready: true } as const;'
+invalid:
+  - 'const value = input as any;'
+  - 'consume((input as any).value);'
